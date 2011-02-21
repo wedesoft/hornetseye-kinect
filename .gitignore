@@ -1,0 +1,9 @@
+.depends.mf
+doc
+pkg
+.yardoc
+*~
+*.gem
+*.swp
+*.log
+
