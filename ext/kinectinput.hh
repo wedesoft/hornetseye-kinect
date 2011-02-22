@@ -28,12 +28,14 @@ public:
   void close(void);
   bool status(void) const;
   std::string inspect(void) const;
+  void setLED( unsigned char state ) throw (Error);
   static VALUE cRubyClass;
   static VALUE registerRubyClass( VALUE module );
   static void deleteRubyObject( void *ptr );
   static VALUE wrapNew( VALUE rbClass, VALUE rbContext, VALUE rbNode );
   static VALUE wrapClose( VALUE rbSelf );
   static VALUE wrapStatus( VALUE rbSelf );
+  static VALUE wrapSetLED( VALUE rbSelf, VALUE rbState );
  protected:
   int m_node;
   freenect_device *m_device;

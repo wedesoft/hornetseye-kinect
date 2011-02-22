@@ -24,6 +24,8 @@ KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
 {
   ERRORMACRO( freenect_open_device( context->get(), &m_device, node ) >= 0, Error, ,
               "Failed to open Kinect device number " << node );
+  freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
+  freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
 }
 
 KinectInput::~KinectInput(void)
@@ -52,12 +54,26 @@ string KinectInput::inspect(void) const
   return s.str();
 }
  
+void KinectInput::setLED( unsigned char state ) throw (Error)
+{
+  ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
+              "Did you call \"close\" before?" );
+  freenect_set_led( m_device, (freenect_led_options)state );
+}
+
 VALUE KinectInput::registerRubyClass( VALUE module )
 {
   cRubyClass = rb_define_class_under( module, "KinectInput", rb_cObject );
+  rb_define_const( cRubyClass, "LED_OFF", INT2NUM( LED_OFF ) );
+  rb_define_const( cRubyClass, "LED_GREEN", INT2NUM( LED_GREEN ) );
+  rb_define_const( cRubyClass, "LED_RED", INT2NUM( LED_RED ) );
+  rb_define_const( cRubyClass, "LED_YELLOW", INT2NUM( LED_YELLOW ) );
+  rb_define_const( cRubyClass, "LED_BLINK_GREEN", INT2NUM( LED_BLINK_GREEN ) );
+  rb_define_const( cRubyClass, "LED_BLINK_RED_YELLOW", INT2NUM( LED_BLINK_RED_YELLOW ) );
   rb_define_singleton_method( cRubyClass, "new", RUBY_METHOD_FUNC( wrapNew ), 2 );
   rb_define_method( cRubyClass, "close", RUBY_METHOD_FUNC( wrapClose ), 0 );
   rb_define_method( cRubyClass, "status?", RUBY_METHOD_FUNC( wrapStatus ), 0 );
+  rb_define_method( cRubyClass, "led=", RUBY_METHOD_FUNC( wrapSetLED ), 1 );
 }
 
 void KinectInput::deleteRubyObject( void *ptr )
@@ -91,4 +107,16 @@ VALUE KinectInput::wrapStatus( VALUE rbSelf )
   KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
   return (*self)->status() ? Qtrue : Qfalse;
 }
+
+VALUE KinectInput::wrapSetLED( VALUE rbSelf, VALUE rbState )
+{
+  try {
+    KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
+    (*self)->setLED( NUM2INT( rbState ) );
+  } catch ( exception &e ) {
+    rb_raise( rb_eRuntimeError, "%s", e.what() );
+  };
+  return rbState;
+}  
+
 
