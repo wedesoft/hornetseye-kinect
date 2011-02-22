@@ -13,29 +13,38 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
-#include "kinectcontext.hh"
 #include "kinectinput.hh"
-#include "rubyinc.hh"
 
-#ifdef WIN32
-#define DLLEXPORT __declspec(dllexport)
-#define DLLLOCAL
-#else
-#define DLLEXPORT __attribute__ ((visibility("default")))
-#define DLLLOCAL __attribute__ ((visibility("hidden")))
-#endif
+using namespace std;
 
-extern "C" DLLEXPORT void Init_hornetseye_kinect(void);
+KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
+  m_node( node ), m_device( NULL )
+{
+}
 
-extern "C" {
+KinectInput::~KinectInput(void)
+{
+  close();
+}
 
-  void Init_hornetseye_kinect(void)
-  {
-    VALUE rbHornetseye = rb_define_module( "Hornetseye" );
-    KinectContext::registerRubyClass( rbHornetseye );
-    KinectInput::registerRubyClass( rbHornetseye );
-    rb_require( "hornetseye_kinect_ext.rb" );
-  }
+void KinectInput::close(void)
+{
+  m_node = -1;
+}
 
+bool KinectInput::status(void) const
+{
+  return m_device != NULL;
+}
+
+string KinectInput::inspect(void) const
+{
+  ostringstream s;
+  s << "KinectInput( '" << m_node << "' )";
+  return s.str();
+}
+ 
+VALUE KinectInput::registerRubyClass( VALUE module )
+{
 }
 
