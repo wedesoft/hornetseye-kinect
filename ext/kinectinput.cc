@@ -95,7 +95,7 @@ double KinectInput::getTilt(void) throw (Error)
   return freenect_get_tilt_degs( freenect_get_tilt_state( m_device ) );
 }
 
-double KinectInput::getAcc( int id )
+double KinectInput::getAcc( int id ) throw (Error)
 {
   ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
               "Did you call \"close\" before?" );
@@ -103,6 +103,13 @@ double KinectInput::getAcc( int id )
   freenect_get_mks_accel( freenect_get_tilt_state( m_device ),
                           &acc[0], &acc[1], &acc[2] );
   return acc[ id ];
+}
+
+int KinectInput::getTiltStatus(void) throw (Error)
+{
+  ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
+              "Did you call \"close\" before?" );
+  return (int)freenect_get_tilt_status( freenect_get_tilt_state( m_device ) );
 }
 
 void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
@@ -136,6 +143,9 @@ VALUE KinectInput::registerRubyClass( VALUE module )
   rb_define_const( cRubyClass, "LED_YELLOW", INT2NUM( LED_YELLOW ) );
   rb_define_const( cRubyClass, "LED_BLINK_GREEN", INT2NUM( LED_BLINK_GREEN ) );
   rb_define_const( cRubyClass, "LED_BLINK_RED_YELLOW", INT2NUM( LED_BLINK_RED_YELLOW ) );
+  rb_define_const( cRubyClass, "TILT_STATUS_STOPPED", INT2NUM( TILT_STATUS_STOPPED ) );
+  rb_define_const( cRubyClass, "TILT_STATUS_LIMIT", INT2NUM( TILT_STATUS_LIMIT ) );
+  rb_define_const( cRubyClass, "TILT_STATUS_MOVING", INT2NUM( TILT_STATUS_MOVING ) );
   rb_define_singleton_method( cRubyClass, "new", RUBY_METHOD_FUNC( wrapNew ), 2 );
   rb_define_method( cRubyClass, "close", RUBY_METHOD_FUNC( wrapClose ), 0 );
   rb_define_method( cRubyClass, "status?", RUBY_METHOD_FUNC( wrapStatus ), 0 );
@@ -144,6 +154,7 @@ VALUE KinectInput::registerRubyClass( VALUE module )
   rb_define_method( cRubyClass, "get_state", RUBY_METHOD_FUNC( wrapGetState ), 0 );
   rb_define_method( cRubyClass, "tilt", RUBY_METHOD_FUNC( wrapGetTilt ), 0 );
   rb_define_method( cRubyClass, "acc", RUBY_METHOD_FUNC( wrapGetAcc ), 0 );
+  rb_define_method( cRubyClass, "tilt_status", RUBY_METHOD_FUNC( wrapGetTiltStatus ), 0 );
 }
 
 void KinectInput::deleteRubyObject( void *ptr )
@@ -231,6 +242,18 @@ VALUE KinectInput::wrapGetAcc( VALUE rbSelf )
     rbRetVal = rb_ary_new3( 3, INT2NUM( (*self)->getAcc( 0 ) ),
                             INT2NUM( (*self)->getAcc( 1 ) ),
                             INT2NUM( (*self)->getAcc( 2 ) ) );
+  } catch ( exception &e ) {
+    rb_raise( rb_eRuntimeError, "%s", e.what() );
+  };
+  return rbRetVal;
+}
+
+VALUE KinectInput::wrapGetTiltStatus( VALUE rbSelf )
+{
+  VALUE rbRetVal = Qnil;
+  try {
+    KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
+    rbRetVal = NUM2INT( (*self)->getTiltStatus() );
   } catch ( exception &e ) {
     rb_raise( rb_eRuntimeError, "%s", e.what() );
   };

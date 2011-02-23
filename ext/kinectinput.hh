@@ -33,7 +33,8 @@ public:
   void setTilt( double angle ) throw (Error);
   void getState(void) throw (Error);
   double getTilt(void) throw (Error);
-  double getAcc( int id );
+  double getAcc( int id ) throw (Error);
+  int getTiltStatus(void) throw (Error);
   static VALUE cRubyClass;
   static VALUE registerRubyClass( VALUE module );
   static void deleteRubyObject( void *ptr );
@@ -45,6 +46,7 @@ public:
   static VALUE wrapGetTilt( VALUE rbSelf );
   static VALUE wrapGetState( VALUE rbSelf );
   static VALUE wrapGetAcc( VALUE rbSelf );
+  static VALUE wrapGetTiltStatus( VALUE rbSelf );
  protected:
   void depthCallBack( void *depth, unsigned int timestamp );
   void videoCallBack( void *video, unsigned int timestamp );
