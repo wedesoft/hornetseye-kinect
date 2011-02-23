@@ -80,6 +80,14 @@ void KinectInput::setTilt( double angle ) throw (Error)
               "Error setting tilt angle" );
 }
 
+void KinectInput::getState(void) throw (Error)
+{
+  ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
+              "Did you call \"close\" before?" );
+  ERRORMACRO( freenect_update_tilt_state( m_device ) == 0, Error, ,
+              "Error retrieving tilt state" );
+}
+
 void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
 {
   
@@ -116,6 +124,7 @@ VALUE KinectInput::registerRubyClass( VALUE module )
   rb_define_method( cRubyClass, "status?", RUBY_METHOD_FUNC( wrapStatus ), 0 );
   rb_define_method( cRubyClass, "led=", RUBY_METHOD_FUNC( wrapSetLED ), 1 );
   rb_define_method( cRubyClass, "tilt=", RUBY_METHOD_FUNC( wrapSetTilt ), 1 );
+  rb_define_method( cRubyClass, "get_state", RUBY_METHOD_FUNC( wrapGetState ), 0 );
 }
 
 void KinectInput::deleteRubyObject( void *ptr )
@@ -170,5 +179,16 @@ VALUE KinectInput::wrapSetTilt( VALUE rbSelf, VALUE rbAngle )
     rb_raise( rb_eRuntimeError, "%s", e.what() );
   };
   return rbAngle;
+}  
+
+VALUE KinectInput::wrapGetState( VALUE rbSelf )
+{
+  try {
+    KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
+    (*self)->getState();
+  } catch ( exception &e ) {
+    rb_raise( rb_eRuntimeError, "%s", e.what() );
+  };
+  return rbSelf;
 }  
 
