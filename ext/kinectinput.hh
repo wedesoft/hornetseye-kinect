@@ -16,6 +16,7 @@
 #ifndef HORNETSEYE_KINECTINPUT_HH
 #define HORNETSEYE_KINECTINPUT_HH
 
+#include <map>
 #include "error.hh"
 #include "frame.hh"
 #include "kinectcontext.hh"
@@ -29,6 +30,7 @@ public:
   bool status(void) const;
   std::string inspect(void) const;
   void setLED( unsigned char state ) throw (Error);
+  void setTilt( double angle ) throw (Error);
   static VALUE cRubyClass;
   static VALUE registerRubyClass( VALUE module );
   static void deleteRubyObject( void *ptr );
@@ -36,7 +38,15 @@ public:
   static VALUE wrapClose( VALUE rbSelf );
   static VALUE wrapStatus( VALUE rbSelf );
   static VALUE wrapSetLED( VALUE rbSelf, VALUE rbState );
+  static VALUE wrapSetTilt( VALUE rbSelf, VALUE rbAngle );
  protected:
+  void depthCallBack( void *depth, unsigned int timestamp );
+  void videoCallBack( void *video, unsigned int timestamp );
+  static void staticDepthCallBack( freenect_device *device,
+                                   void *depth, uint32_t timestamp );
+  static void staticVideoCallBack( freenect_device *device,
+                                   void *rgb, uint32_t timestamp );
+  static std::map< freenect_device *, KinectInput * > instances;
   int m_node;
   freenect_device *m_device;
 };

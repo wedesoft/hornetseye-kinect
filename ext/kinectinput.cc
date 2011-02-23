@@ -19,13 +19,20 @@ using namespace std;
 
 VALUE KinectInput::cRubyClass = Qnil;
 
+std::map< freenect_device *, KinectInput * > KinectInput::instances;
+
 KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
   m_node( node ), m_device( NULL )
 {
   ERRORMACRO( freenect_open_device( context->get(), &m_device, node ) >= 0, Error, ,
               "Failed to open Kinect device number " << node );
-  freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
+  instances[ m_device ] = this;
   freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
+  freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
+  freenect_set_depth_callback( m_device, staticDepthCallBack );
+  freenect_set_video_callback( m_device, staticVideoCallBack );
+  freenect_start_depth( m_device );
+  freenect_start_video( m_device );
 }
 
 KinectInput::~KinectInput(void)
@@ -36,7 +43,10 @@ KinectInput::~KinectInput(void)
 void KinectInput::close(void)
 {
   if ( m_device != NULL ) {
+    freenect_stop_depth( m_device );
+    freenect_stop_video( m_device );
     freenect_close_device( m_device );
+    instances.erase( m_device );
     m_device = NULL;
   };
   m_node = -1;
@@ -58,7 +68,38 @@ void KinectInput::setLED( unsigned char state ) throw (Error)
 {
   ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
               "Did you call \"close\" before?" );
-  freenect_set_led( m_device, (freenect_led_options)state );
+  ERRORMACRO( freenect_set_led( m_device, (freenect_led_options)state ) == 0, Error, ,
+              "Error setting LED state" );
+}
+
+void KinectInput::setTilt( double angle ) throw (Error)
+{
+  ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
+              "Did you call \"close\" before?" );
+  ERRORMACRO( freenect_set_tilt_degs( m_device, angle ) == 0, Error, ,
+              "Error setting tilt angle" );
+}
+
+void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
+{
+  
+}
+
+void KinectInput::videoCallBack( void *video, unsigned int timestamp )
+{
+  
+}
+
+void KinectInput::staticDepthCallBack( freenect_device *device,
+                                       void *depth, uint32_t timestamp )
+{
+  instances[ device ]->depthCallBack( depth, timestamp );
+}
+
+void KinectInput::staticVideoCallBack( freenect_device *device,
+                                       void *rgb, uint32_t timestamp )
+{
+  instances[ device ]->videoCallBack( rgb, timestamp );
 }
 
 VALUE KinectInput::registerRubyClass( VALUE module )
@@ -74,6 +115,7 @@ VALUE KinectInput::registerRubyClass( VALUE module )
   rb_define_method( cRubyClass, "close", RUBY_METHOD_FUNC( wrapClose ), 0 );
   rb_define_method( cRubyClass, "status?", RUBY_METHOD_FUNC( wrapStatus ), 0 );
   rb_define_method( cRubyClass, "led=", RUBY_METHOD_FUNC( wrapSetLED ), 1 );
+  rb_define_method( cRubyClass, "tilt=", RUBY_METHOD_FUNC( wrapSetTilt ), 1 );
 }
 
 void KinectInput::deleteRubyObject( void *ptr )
@@ -119,4 +161,14 @@ VALUE KinectInput::wrapSetLED( VALUE rbSelf, VALUE rbState )
   return rbState;
 }  
 
+VALUE KinectInput::wrapSetTilt( VALUE rbSelf, VALUE rbAngle )
+{
+  try {
+    KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
+    (*self)->setTilt( NUM2DBL( rbAngle ) );
+  } catch ( exception &e ) {
+    rb_raise( rb_eRuntimeError, "%s", e.what() );
+  };
+  return rbAngle;
+}  
 
