@@ -32,6 +32,8 @@ public:
   void setLED( unsigned char state ) throw (Error);
   void setTilt( double angle ) throw (Error);
   void getState(void) throw (Error);
+  double getTilt(void) throw (Error);
+  double getAcc( int id );
   static VALUE cRubyClass;
   static VALUE registerRubyClass( VALUE module );
   static void deleteRubyObject( void *ptr );
@@ -40,7 +42,9 @@ public:
   static VALUE wrapStatus( VALUE rbSelf );
   static VALUE wrapSetLED( VALUE rbSelf, VALUE rbState );
   static VALUE wrapSetTilt( VALUE rbSelf, VALUE rbAngle );
+  static VALUE wrapGetTilt( VALUE rbSelf );
   static VALUE wrapGetState( VALUE rbSelf );
+  static VALUE wrapGetAcc( VALUE rbSelf );
  protected:
   void depthCallBack( void *depth, unsigned int timestamp );
   void videoCallBack( void *video, unsigned int timestamp );

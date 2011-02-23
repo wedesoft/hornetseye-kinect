@@ -88,6 +88,23 @@ void KinectInput::getState(void) throw (Error)
               "Error retrieving tilt state" );
 }
 
+double KinectInput::getTilt(void) throw (Error)
+{
+  ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
+              "Did you call \"close\" before?" );
+  return freenect_get_tilt_degs( freenect_get_tilt_state( m_device ) );
+}
+
+double KinectInput::getAcc( int id )
+{
+  ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
+              "Did you call \"close\" before?" );
+  double acc[3];
+  freenect_get_mks_accel( freenect_get_tilt_state( m_device ),
+                          &acc[0], &acc[1], &acc[2] );
+  return acc[ id ];
+}
+
 void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
 {
   
@@ -125,6 +142,8 @@ VALUE KinectInput::registerRubyClass( VALUE module )
   rb_define_method( cRubyClass, "led=", RUBY_METHOD_FUNC( wrapSetLED ), 1 );
   rb_define_method( cRubyClass, "tilt=", RUBY_METHOD_FUNC( wrapSetTilt ), 1 );
   rb_define_method( cRubyClass, "get_state", RUBY_METHOD_FUNC( wrapGetState ), 0 );
+  rb_define_method( cRubyClass, "tilt", RUBY_METHOD_FUNC( wrapGetTilt ), 0 );
+  rb_define_method( cRubyClass, "acc", RUBY_METHOD_FUNC( wrapGetAcc ), 0 );
 }
 
 void KinectInput::deleteRubyObject( void *ptr )
@@ -168,7 +187,7 @@ VALUE KinectInput::wrapSetLED( VALUE rbSelf, VALUE rbState )
     rb_raise( rb_eRuntimeError, "%s", e.what() );
   };
   return rbState;
-}  
+}
 
 VALUE KinectInput::wrapSetTilt( VALUE rbSelf, VALUE rbAngle )
 {
@@ -179,7 +198,7 @@ VALUE KinectInput::wrapSetTilt( VALUE rbSelf, VALUE rbAngle )
     rb_raise( rb_eRuntimeError, "%s", e.what() );
   };
   return rbAngle;
-}  
+}
 
 VALUE KinectInput::wrapGetState( VALUE rbSelf )
 {
@@ -190,5 +209,31 @@ VALUE KinectInput::wrapGetState( VALUE rbSelf )
     rb_raise( rb_eRuntimeError, "%s", e.what() );
   };
   return rbSelf;
-}  
+}
+
+VALUE KinectInput::wrapGetTilt( VALUE rbSelf )
+{
+  VALUE rbRetVal = Qnil;
+  try {
+    KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
+    rbRetVal = (*self)->getTilt();
+  } catch ( exception &e ) {
+    rb_raise( rb_eRuntimeError, "%s", e.what() );
+  };
+  return rbRetVal;
+}
+
+VALUE KinectInput::wrapGetAcc( VALUE rbSelf )
+{
+  VALUE rbRetVal = Qnil;
+  try {
+    KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
+    rbRetVal = rb_ary_new3( 3, INT2NUM( (*self)->getAcc( 0 ) ),
+                            INT2NUM( (*self)->getAcc( 1 ) ),
+                            INT2NUM( (*self)->getAcc( 2 ) ) );
+  } catch ( exception &e ) {
+    rb_raise( rb_eRuntimeError, "%s", e.what() );
+  };
+  return rbRetVal;
+}
 
