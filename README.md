@@ -58,3 +58,29 @@ You can load and use the libfreenect wrappers as shown below. This example demon
       end
     end
 
+Here is another example displaying RGB and the depth image while keeping the tilt angle at zero:
+
+    require 'rubygems'
+    require 'hornetseye_kinect'
+    require 'hornetseye_xorg'
+    include Hornetseye
+    input = KinectInput.new
+    display = X11Display.new
+    output_depth, output_video = XImageOutput.new, XVideoOutput.new
+    window_depth = X11Window.new display, output_depth, 640, 480
+    window_video = X11Window.new display, output_video, 640, 480
+    window_depth.title = 'Depth'
+    window_video.title = 'Video'
+    window_depth.show
+    window_video.show
+    input.led = KinectInput::LED_RED
+    while display.status?
+      input.tilt = 0.0
+      input.get_state
+      moving = input.tilt_status == KinectInput::TILT_STATUS_MOVING
+      input.led = moving ? KinectInput::LED_RED : KinectInput::LED_GREEN
+      output_video.write input.read_video
+      output_depth.write input.read_depth
+      display.process_events
+    end
+
