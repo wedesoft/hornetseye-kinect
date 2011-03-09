@@ -27,7 +27,7 @@ public:
   KinectInput( KinectContextPtr context, int node ) throw (Error);
   virtual ~KinectInput(void);
   void close(void);
-  FramePtr read(void) throw (Error);
+  FramePtr readVideo(void) throw (Error);
   bool status(void) const;
   std::string inspect(void) const;
   void setLED( unsigned char state ) throw (Error);
@@ -40,7 +40,7 @@ public:
   static void deleteRubyObject( void *ptr );
   static VALUE wrapNew( VALUE rbClass, VALUE rbContext, VALUE rbNode );
   static VALUE wrapClose( VALUE rbSelf );
-  static VALUE wrapRead( VALUE rbSelf );
+  static VALUE wrapReadVideo( VALUE rbSelf );
   static VALUE wrapStatus( VALUE rbSelf );
   static VALUE wrapInspect( VALUE rbSelf );
   static VALUE wrapSetLED( VALUE rbSelf, VALUE rbState );
@@ -60,6 +60,7 @@ public:
   int m_node;
   freenect_device *m_device;
   int m_current;
+  bool m_haveRGB;
   char *m_rgb[2];
 };
 

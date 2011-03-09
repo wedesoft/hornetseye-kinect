@@ -22,7 +22,7 @@ VALUE KinectInput::cRubyClass = Qnil;
 std::map< freenect_device *, KinectInput * > KinectInput::instances;
 
 KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
-  m_context( context ), m_node( node ), m_device( NULL ), m_current(0)
+  m_context( context ), m_node( node ), m_device( NULL ), m_current(0), m_haveRGB(false)
 {
   ERRORMACRO( freenect_open_device( context->get(), &m_device, node ) >= 0, Error, ,
               "Failed to open Kinect device number " << node );
@@ -64,10 +64,12 @@ void KinectInput::close(void)
   m_node = -1;
 }
 
-FramePtr KinectInput::read(void) throw (Error)
+FramePtr KinectInput::readVideo(void) throw (Error)
 {
   ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
               "Did you call \"close\" before?" );
+  while ( !m_haveRGB ) m_context->processEvents();
+  m_haveRGB = false;
   FramePtr retVal = FramePtr
     ( new Frame( "UBYTERGB", FREENECT_FRAME_W, FREENECT_FRAME_H, m_rgb[ 1 - m_current ] ) );
   return retVal;
@@ -133,6 +135,7 @@ void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
 void KinectInput::videoCallBack( void *video, unsigned int timestamp )
 {
   m_current = 1 - m_current;
+  m_haveRGB = true;
   freenect_set_video_buffer( m_device, m_rgb[ m_current ] );
 }
 
@@ -163,7 +166,7 @@ VALUE KinectInput::registerRubyClass( VALUE module )
   rb_define_singleton_method( cRubyClass, "new", RUBY_METHOD_FUNC( wrapNew ), 2 );
   rb_define_method( cRubyClass, "inspect", RUBY_METHOD_FUNC( wrapInspect ), 0 );
   rb_define_method( cRubyClass, "close", RUBY_METHOD_FUNC( wrapClose ), 0 );
-  rb_define_method( cRubyClass, "read", RUBY_METHOD_FUNC( wrapRead ), 0 );
+  rb_define_method( cRubyClass, "read_video", RUBY_METHOD_FUNC( wrapReadVideo ), 0 );
   rb_define_method( cRubyClass, "status?", RUBY_METHOD_FUNC( wrapStatus ), 0 );
   rb_define_method( cRubyClass, "led=", RUBY_METHOD_FUNC( wrapSetLED ), 1 );
   rb_define_method( cRubyClass, "tilt=", RUBY_METHOD_FUNC( wrapSetTilt ), 1 );
@@ -205,12 +208,12 @@ VALUE KinectInput::wrapClose( VALUE rbSelf )
   return rbSelf;
 }
 
-VALUE KinectInput::wrapRead( VALUE rbSelf )
+VALUE KinectInput::wrapReadVideo( VALUE rbSelf )
 {
   VALUE retVal = Qnil;
   try {
     KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
-    FramePtr frame( (*self)->read() );
+    FramePtr frame( (*self)->readVideo() );
     retVal = frame->rubyObject();
   } catch ( std::exception &e ) {
     rb_raise( rb_eRuntimeError, "%s", e.what() );

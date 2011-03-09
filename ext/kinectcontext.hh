@@ -28,6 +28,7 @@ public:
   virtual ~KinectContext(void);
   std::string inspect(void) const;
   void close(void);
+  void processEvents(void) throw (Error);
   freenect_context *get(void) throw (Error);
   static VALUE cRubyClass;
   static VALUE registerRubyClass( VALUE module );

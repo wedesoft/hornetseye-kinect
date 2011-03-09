@@ -54,7 +54,9 @@ module Hornetseye
 
     end
 
-    # include ReaderConversion
+    alias_method :read, :read_video
+
+    include ReaderConversion
 
   end
 

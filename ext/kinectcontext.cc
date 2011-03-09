@@ -52,6 +52,12 @@ freenect_context *KinectContext::get(void) throw (Error)
   return m_context;
 }
 
+void KinectContext::processEvents(void) throw (Error)
+{
+  ERRORMACRO( freenect_process_events( m_context ) >= 0, Error, , "Error processing "
+              "USB events" );
+}
+
 string KinectContext::inspect(void) const
 {
   ostringstream s;
