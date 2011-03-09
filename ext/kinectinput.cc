@@ -45,12 +45,17 @@ void KinectInput::close(void)
   if ( m_device != NULL ) {
     freenect_stop_depth( m_device );
     freenect_stop_video( m_device );
-    freenect_set_led( m_device, LED_OFF );
+    freenect_set_led( m_device, LED_BLINK_GREEN );
     freenect_close_device( m_device );
     instances.erase( m_device );
     m_device = NULL;
   };
   m_node = -1;
+}
+
+FramePtr KinectInput::read(void) throw (Error)
+{
+  
 }
 
 bool KinectInput::status(void) const
@@ -141,6 +146,7 @@ VALUE KinectInput::registerRubyClass( VALUE module )
   rb_define_const( cRubyClass, "TILT_STATUS_MOVING", INT2NUM( TILT_STATUS_MOVING ) );
   rb_define_singleton_method( cRubyClass, "new", RUBY_METHOD_FUNC( wrapNew ), 2 );
   rb_define_method( cRubyClass, "close", RUBY_METHOD_FUNC( wrapClose ), 0 );
+  rb_define_method( cRubyClass, "read", RUBY_METHOD_FUNC( wrapRead ), 0 );
   rb_define_method( cRubyClass, "status?", RUBY_METHOD_FUNC( wrapStatus ), 0 );
   rb_define_method( cRubyClass, "led=", RUBY_METHOD_FUNC( wrapSetLED ), 1 );
   rb_define_method( cRubyClass, "tilt=", RUBY_METHOD_FUNC( wrapSetTilt ), 1 );
@@ -173,6 +179,19 @@ VALUE KinectInput::wrapClose( VALUE rbSelf )
   KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
   (*self)->close();
   return rbSelf;
+}
+
+VALUE KinectInput::wrapRead( VALUE rbSelf )
+{
+  VALUE retVal = Qnil;
+  try {
+    KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
+    FramePtr frame( (*self)->read() );
+    retVal = frame->rubyObject();
+  } catch ( std::exception &e ) {
+    rb_raise( rb_eRuntimeError, "%s", e.what() );
+  };
+  return retVal;
 }
 
 VALUE KinectInput::wrapStatus( VALUE rbSelf )
