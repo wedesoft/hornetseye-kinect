@@ -42,19 +42,19 @@ You can load and use the libfreenect wrappers as shown below. This example demon
     DELAY = 0.1
     PAUSE = 1.0
     input = KinectInput.new
-    [ 20, -20, 0 ].each do |angle|
+    [ 20.0, -20.0, 0.0 ].each do |angle|
       t = Time.new.to_f
       input.led = KinectInput::LED_RED
       input.tilt = angle
       while Time.new.to_f < t + DELAY or input.tilt_status != KinectInput::TILT_STATUS_STOPPED
         input.get_state
-        printf "[%d, %d, %d]        \r", *input.acc
+        printf "acceleration = [%5.2f, %5.2f, %5.2f]        \r", *input.acc
       end
       input.led = KinectInput::LED_GREEN
       t = Time.new.to_f
       while Time.new.to_f < t + PAUSE
         input.get_state
-        printf "[%d, %d, %d]        \r", *input.acc
+        printf "acceleration = [%5.2f, %5.2f, %5.2f]        \r", *input.acc
       end
     end
 
