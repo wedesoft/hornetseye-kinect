@@ -13,14 +13,13 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
-// #include <iostream>
 #include "kinectinput.hh"
 
 using namespace std;
 
 VALUE KinectInput::cRubyClass = Qnil;
 
-std::map< freenect_device *, KinectInput * > KinectInput::instances;
+map< freenect_device *, KinectInput * > KinectInput::instances;
 
 KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
   m_context( context ), m_node( node ), m_device( NULL ), m_currentRGB(0), m_haveRGB(false),
@@ -157,7 +156,6 @@ int KinectInput::getTiltStatus(void) throw (Error)
 
 void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
 {
-  // cerr << "depth time stamp = " << timestamp << endl;
   m_currentDepth = 1 - m_currentDepth;
   m_haveDepth = true;
   freenect_set_depth_buffer( m_device, m_depth[ m_currentDepth ] );
@@ -165,7 +163,6 @@ void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
 
 void KinectInput::videoCallBack( void *video, unsigned int timestamp )
 {
-  // cerr << "video time stamp = " << timestamp << endl;
   m_currentRGB = 1 - m_currentRGB;
   m_haveRGB = true;
   freenect_set_video_buffer( m_device, m_rgb[ m_currentRGB ] );
