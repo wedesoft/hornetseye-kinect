@@ -308,9 +308,9 @@ VALUE KinectInput::wrapGetAcc( VALUE rbSelf )
   VALUE rbRetVal = Qnil;
   try {
     KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
-    rbRetVal = rb_ary_new3( 3, DBL2NUM( (*self)->getAcc( 0 ) ),
-                            DBL2NUM( (*self)->getAcc( 1 ) ),
-                            DBL2NUM( (*self)->getAcc( 2 ) ) );
+    rbRetVal = rb_ary_new3( 3, rb_float_new( (*self)->getAcc( 0 ) ),
+                            rb_float_new( (*self)->getAcc( 1 ) ),
+                            rb_float_new( (*self)->getAcc( 2 ) ) );
   } catch ( exception &e ) {
     rb_raise( rb_eRuntimeError, "%s", e.what() );
   };
