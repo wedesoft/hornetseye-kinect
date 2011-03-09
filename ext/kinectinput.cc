@@ -22,15 +22,20 @@ VALUE KinectInput::cRubyClass = Qnil;
 std::map< freenect_device *, KinectInput * > KinectInput::instances;
 
 KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
-  m_context( context ), m_node( node ), m_device( NULL ), m_current(0), m_haveRGB(false)
+  m_context( context ), m_node( node ), m_device( NULL ), m_currentRGB(0), m_haveRGB(false),
+  m_currentDepth(0), m_haveDepth(false)
 {
+  m_rgb[0] = NULL; m_rgb[1] = NULL; m_depth[0] = NULL; m_depth[1] = NULL;
   ERRORMACRO( freenect_open_device( context->get(), &m_device, node ) >= 0, Error, ,
               "Failed to open Kinect device number " << node );
   m_rgb[0] = (char *)malloc( FREENECT_VIDEO_RGB_SIZE );
   m_rgb[1] = (char *)malloc( FREENECT_VIDEO_RGB_SIZE );
+  m_depth[0] = (char *)malloc( FREENECT_DEPTH_11BIT_SIZE );
+  m_depth[1] = (char *)malloc( FREENECT_DEPTH_11BIT_SIZE );
   instances[ m_device ] = this;
   freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
   freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
+  freenect_set_depth_buffer( m_device, m_rgb[0] );
   freenect_set_video_buffer( m_device, m_rgb[0] );
   freenect_set_depth_callback( m_device, staticDepthCallBack );
   freenect_set_video_callback( m_device, staticVideoCallBack );
@@ -53,13 +58,21 @@ void KinectInput::close(void)
     instances.erase( m_device );
     m_device = NULL;
   };
-  if ( m_rgb[0] != NULL ) {
-    free( m_rgb[0] );
-    m_rgb[0] = NULL;
+  if ( m_depth[1] != NULL ) {
+    free( m_depth[1] );
+    m_depth[1] = NULL;
+  };
+  if ( m_depth[0] != NULL ) {
+    free( m_depth[0] );
+    m_depth[0] = NULL;
   };
   if ( m_rgb[1] != NULL ) {
     free( m_rgb[1] );
     m_rgb[1] = NULL;
+  };
+  if ( m_rgb[0] != NULL ) {
+    free( m_rgb[0] );
+    m_rgb[0] = NULL;
   };
   m_node = -1;
 }
@@ -71,7 +84,20 @@ FramePtr KinectInput::readVideo(void) throw (Error)
   while ( !m_haveRGB ) m_context->processEvents();
   m_haveRGB = false;
   FramePtr retVal = FramePtr
-    ( new Frame( "UBYTERGB", FREENECT_FRAME_W, FREENECT_FRAME_H, m_rgb[ 1 - m_current ] ) );
+    ( new Frame( "UBYTERGB", FREENECT_FRAME_W, FREENECT_FRAME_H,
+                 m_rgb[ 1 - m_currentRGB ] ) );
+  return retVal;
+}
+
+FramePtr KinectInput::readDepth(void) throw (Error)
+{
+  ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
+              "Did you call \"close\" before?" );
+  while ( !m_haveDepth ) m_context->processEvents();
+  m_haveDepth = false;
+  FramePtr retVal = FramePtr
+    ( new Frame( "USINT", FREENECT_FRAME_W, FREENECT_FRAME_H,
+                 m_depth[ 1 - m_currentDepth ] ) );
   return retVal;
 }
 
@@ -129,14 +155,16 @@ int KinectInput::getTiltStatus(void) throw (Error)
 
 void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
 {
-  
+  m_currentDepth = 1 - m_currentDepth;
+  m_haveDepth = true;
+  freenect_set_depth_buffer( m_device, m_depth[ m_currentDepth ] );
 }
 
 void KinectInput::videoCallBack( void *video, unsigned int timestamp )
 {
-  m_current = 1 - m_current;
+  m_currentRGB = 1 - m_currentRGB;
   m_haveRGB = true;
-  freenect_set_video_buffer( m_device, m_rgb[ m_current ] );
+  freenect_set_video_buffer( m_device, m_rgb[ m_currentRGB ] );
 }
 
 void KinectInput::staticDepthCallBack( freenect_device *device,
@@ -167,6 +195,7 @@ VALUE KinectInput::registerRubyClass( VALUE module )
   rb_define_method( cRubyClass, "inspect", RUBY_METHOD_FUNC( wrapInspect ), 0 );
   rb_define_method( cRubyClass, "close", RUBY_METHOD_FUNC( wrapClose ), 0 );
   rb_define_method( cRubyClass, "read_video", RUBY_METHOD_FUNC( wrapReadVideo ), 0 );
+  rb_define_method( cRubyClass, "read_depth", RUBY_METHOD_FUNC( wrapReadDepth ), 0 );
   rb_define_method( cRubyClass, "status?", RUBY_METHOD_FUNC( wrapStatus ), 0 );
   rb_define_method( cRubyClass, "led=", RUBY_METHOD_FUNC( wrapSetLED ), 1 );
   rb_define_method( cRubyClass, "tilt=", RUBY_METHOD_FUNC( wrapSetTilt ), 1 );
@@ -214,6 +243,19 @@ VALUE KinectInput::wrapReadVideo( VALUE rbSelf )
   try {
     KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
     FramePtr frame( (*self)->readVideo() );
+    retVal = frame->rubyObject();
+  } catch ( std::exception &e ) {
+    rb_raise( rb_eRuntimeError, "%s", e.what() );
+  };
+  return retVal;
+}
+
+VALUE KinectInput::wrapReadDepth( VALUE rbSelf )
+{
+  VALUE retVal = Qnil;
+  try {
+    KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
+    FramePtr frame( (*self)->readDepth() );
     retVal = frame->rubyObject();
   } catch ( std::exception &e ) {
     rb_raise( rb_eRuntimeError, "%s", e.what() );

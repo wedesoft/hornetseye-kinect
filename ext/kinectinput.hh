@@ -28,6 +28,7 @@ public:
   virtual ~KinectInput(void);
   void close(void);
   FramePtr readVideo(void) throw (Error);
+  FramePtr readDepth(void) throw (Error);
   bool status(void) const;
   std::string inspect(void) const;
   void setLED( unsigned char state ) throw (Error);
@@ -41,6 +42,7 @@ public:
   static VALUE wrapNew( VALUE rbClass, VALUE rbContext, VALUE rbNode );
   static VALUE wrapClose( VALUE rbSelf );
   static VALUE wrapReadVideo( VALUE rbSelf );
+  static VALUE wrapReadDepth( VALUE rbSelf );
   static VALUE wrapStatus( VALUE rbSelf );
   static VALUE wrapInspect( VALUE rbSelf );
   static VALUE wrapSetLED( VALUE rbSelf, VALUE rbState );
@@ -59,9 +61,12 @@ public:
   KinectContextPtr m_context;
   int m_node;
   freenect_device *m_device;
-  int m_current;
+  int m_currentRGB;
   bool m_haveRGB;
   char *m_rgb[2];
+  int m_currentDepth;
+  bool m_haveDepth;
+  char *m_depth[2];
 };
 
 typedef boost::shared_ptr< KinectInput > KinectInputPtr;
