@@ -27,3 +27,34 @@ Alternatively you can build and install the Ruby extension from source as follow
     $ rake
     $ sudo rake install
 
+Usage
+-----
+
+Simply run Interactive Ruby:
+
+    $ irb
+
+You can load and use the libfreenect wrappers as shown below. This example demonstrates setting the tilt angle and the LEDs:
+
+    require 'rubygems'
+    require 'hornetseye_kinect'
+    include Hornetseye
+    DELAY = 0.1
+    PAUSE = 1.0
+    input = KinectInput.new
+    [ 20, -20, 0 ].each do |angle|
+      t = Time.new.to_f
+      input.led = KinectInput::LED_RED
+      input.tilt = angle
+      while Time.new.to_f < t + DELAY or input.tilt_status != KinectInput::TILT_STATUS_STOPPED
+        input.get_state
+        printf "[%d, %d, %d]        \r", *input.acc
+      end
+      input.led = KinectInput::LED_GREEN
+      t = Time.new.to_f
+      while Time.new.to_f < t + PAUSE
+        input.get_state
+        printf "[%d, %d, %d]        \r", *input.acc
+      end
+    end
+

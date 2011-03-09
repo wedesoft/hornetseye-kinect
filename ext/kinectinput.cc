@@ -45,6 +45,7 @@ void KinectInput::close(void)
   if ( m_device != NULL ) {
     freenect_stop_depth( m_device );
     freenect_stop_video( m_device );
+    freenect_set_led( m_device, LED_OFF );
     freenect_close_device( m_device );
     instances.erase( m_device );
     m_device = NULL;
