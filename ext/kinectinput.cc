@@ -13,6 +13,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+// #include <iostream>
 #include "kinectinput.hh"
 
 using namespace std;
@@ -56,6 +57,7 @@ void KinectInput::close(void)
     freenect_set_led( m_device, LED_BLINK_GREEN );
     freenect_close_device( m_device );
     instances.erase( m_device );
+    m_context.reset();
     m_device = NULL;
   };
   if ( m_depth[1] != NULL ) {
@@ -155,6 +157,7 @@ int KinectInput::getTiltStatus(void) throw (Error)
 
 void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
 {
+  // cerr << "depth time stamp = " << timestamp << endl;
   m_currentDepth = 1 - m_currentDepth;
   m_haveDepth = true;
   freenect_set_depth_buffer( m_device, m_depth[ m_currentDepth ] );
@@ -162,6 +165,7 @@ void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
 
 void KinectInput::videoCallBack( void *video, unsigned int timestamp )
 {
+  // cerr << "video time stamp = " << timestamp << endl;
   m_currentRGB = 1 - m_currentRGB;
   m_haveRGB = true;
   freenect_set_video_buffer( m_device, m_rgb[ m_currentRGB ] );
