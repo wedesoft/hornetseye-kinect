@@ -22,13 +22,16 @@ VALUE KinectInput::cRubyClass = Qnil;
 std::map< freenect_device *, KinectInput * > KinectInput::instances;
 
 KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
-  m_context( context ), m_node( node ), m_device( NULL )
+  m_context( context ), m_node( node ), m_device( NULL ), m_current(0)
 {
   ERRORMACRO( freenect_open_device( context->get(), &m_device, node ) >= 0, Error, ,
               "Failed to open Kinect device number " << node );
+  m_rgb[0] = (char *)malloc( FREENECT_VIDEO_RGB_SIZE );
+  m_rgb[1] = (char *)malloc( FREENECT_VIDEO_RGB_SIZE );
   instances[ m_device ] = this;
   freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
   freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
+  freenect_set_video_buffer( m_device, m_rgb[0] );
   freenect_set_depth_callback( m_device, staticDepthCallBack );
   freenect_set_video_callback( m_device, staticVideoCallBack );
   freenect_start_depth( m_device );
@@ -50,12 +53,24 @@ void KinectInput::close(void)
     instances.erase( m_device );
     m_device = NULL;
   };
+  if ( m_rgb[0] != NULL ) {
+    free( m_rgb[0] );
+    m_rgb[0] = NULL;
+  };
+  if ( m_rgb[1] != NULL ) {
+    free( m_rgb[1] );
+    m_rgb[1] = NULL;
+  };
   m_node = -1;
 }
 
 FramePtr KinectInput::read(void) throw (Error)
 {
-  
+  ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
+              "Did you call \"close\" before?" );
+  FramePtr retVal = FramePtr
+    ( new Frame( "UBYTERGB", FREENECT_FRAME_W, FREENECT_FRAME_H, m_rgb[ 1 - m_current ] ) );
+  return retVal;
 }
 
 bool KinectInput::status(void) const
@@ -66,7 +81,7 @@ bool KinectInput::status(void) const
 string KinectInput::inspect(void) const
 {
   ostringstream s;
-  s << "KinectInput( '" << m_node << "' )";
+  s << "KinectInput( " << m_node << " )";
   return s.str();
 }
  
@@ -117,7 +132,8 @@ void KinectInput::depthCallBack( void *depth, unsigned int timestamp )
 
 void KinectInput::videoCallBack( void *video, unsigned int timestamp )
 {
-  
+  m_current = 1 - m_current;
+  freenect_set_video_buffer( m_device, m_rgb[ m_current ] );
 }
 
 void KinectInput::staticDepthCallBack( freenect_device *device,
@@ -145,6 +161,7 @@ VALUE KinectInput::registerRubyClass( VALUE module )
   rb_define_const( cRubyClass, "TILT_STATUS_LIMIT", INT2NUM( TILT_STATUS_LIMIT ) );
   rb_define_const( cRubyClass, "TILT_STATUS_MOVING", INT2NUM( TILT_STATUS_MOVING ) );
   rb_define_singleton_method( cRubyClass, "new", RUBY_METHOD_FUNC( wrapNew ), 2 );
+  rb_define_method( cRubyClass, "inspect", RUBY_METHOD_FUNC( wrapInspect ), 0 );
   rb_define_method( cRubyClass, "close", RUBY_METHOD_FUNC( wrapClose ), 0 );
   rb_define_method( cRubyClass, "read", RUBY_METHOD_FUNC( wrapRead ), 0 );
   rb_define_method( cRubyClass, "status?", RUBY_METHOD_FUNC( wrapStatus ), 0 );
@@ -172,6 +189,13 @@ VALUE KinectInput::wrapNew( VALUE rbClass, VALUE rbContext, VALUE rbNode )
     rb_raise( rb_eRuntimeError, "%s", e.what() );
   };
   return rbRetVal;
+}
+
+VALUE KinectInput::wrapInspect( VALUE rbSelf )
+{
+  KinectInputPtr *self; Data_Get_Struct( rbSelf, KinectInputPtr, self );
+  string retVal( (*self)->inspect() );
+  return rb_str_new( retVal.c_str(), retVal.length() );
 }
 
 VALUE KinectInput::wrapClose( VALUE rbSelf )

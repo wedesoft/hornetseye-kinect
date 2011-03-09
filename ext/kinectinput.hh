@@ -42,6 +42,7 @@ public:
   static VALUE wrapClose( VALUE rbSelf );
   static VALUE wrapRead( VALUE rbSelf );
   static VALUE wrapStatus( VALUE rbSelf );
+  static VALUE wrapInspect( VALUE rbSelf );
   static VALUE wrapSetLED( VALUE rbSelf, VALUE rbState );
   static VALUE wrapSetTilt( VALUE rbSelf, VALUE rbAngle );
   static VALUE wrapGetState( VALUE rbSelf );
@@ -58,6 +59,8 @@ public:
   KinectContextPtr m_context;
   int m_node;
   freenect_device *m_device;
+  int m_current;
+  char *m_rgb[2];
 };
 
 typedef boost::shared_ptr< KinectInput > KinectInputPtr;
