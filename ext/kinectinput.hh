@@ -32,7 +32,6 @@ public:
   void setLED( unsigned char state ) throw (Error);
   void setTilt( double angle ) throw (Error);
   void getState(void) throw (Error);
-  double getTilt(void) throw (Error);
   double getAcc( int id ) throw (Error);
   int getTiltStatus(void) throw (Error);
   static VALUE cRubyClass;
@@ -43,7 +42,6 @@ public:
   static VALUE wrapStatus( VALUE rbSelf );
   static VALUE wrapSetLED( VALUE rbSelf, VALUE rbState );
   static VALUE wrapSetTilt( VALUE rbSelf, VALUE rbAngle );
-  static VALUE wrapGetTilt( VALUE rbSelf );
   static VALUE wrapGetState( VALUE rbSelf );
   static VALUE wrapGetAcc( VALUE rbSelf );
   static VALUE wrapGetTiltStatus( VALUE rbSelf );
@@ -55,6 +53,7 @@ public:
   static void staticVideoCallBack( freenect_device *device,
                                    void *rgb, uint32_t timestamp );
   static std::map< freenect_device *, KinectInput * > instances;
+  KinectContextPtr m_context;
   int m_node;
   freenect_device *m_device;
 };
