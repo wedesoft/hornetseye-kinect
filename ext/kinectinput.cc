@@ -82,7 +82,7 @@ FramePtr KinectInput::readVideo(void) throw (Error)
   m_rgb[ 2 ] = m_rgb[ 1 - m_currentRGB ];
   m_rgb[ 1 - m_currentRGB ] = data;
   FramePtr retVal = FramePtr
-    ( new Frame( "UBYTERGB", FREENECT_FRAME_W, FREENECT_FRAME_H, data ) );
+    ( new Frame( "UBYTERGB", FREENECT_FRAME_W, FREENECT_FRAME_H, m_rgb[ 2 ] ) );
   return retVal;
 }
 
@@ -96,7 +96,7 @@ FramePtr KinectInput::readDepth(void) throw (Error)
   m_depth[ 2 ] = m_depth[ 1 - m_currentDepth ];
   m_depth[ 1 - m_currentDepth ] = data;
   FramePtr retVal = FramePtr
-    ( new Frame( "USINT", FREENECT_FRAME_W, FREENECT_FRAME_H, data ) );
+    ( new Frame( "USINT", FREENECT_FRAME_W, FREENECT_FRAME_H, m_depth[ 2 ] ) );
   return retVal;
 }
 
