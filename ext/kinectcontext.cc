@@ -26,7 +26,8 @@ using namespace std;
 VALUE KinectContext::cRubyClass = Qnil;
 
 KinectContext::KinectContext(void) throw (Error):
-  m_context(NULL)
+  m_context(NULL), m_mutex(PTHREAD_MUTEX_INITIALIZER), m_cond(PTHREAD_COND_INITIALIZER),
+  m_instances(0)
 {
   freenect_init( &m_context, NULL );
   ERRORMACRO( m_context != NULL, Error, , "Initialisation of libfreenect failed" );
@@ -37,9 +38,28 @@ KinectContext::~KinectContext(void)
   close();
 }
 
+void KinectContext::addInstance(void)
+{
+  m_instances++;
+  if ( m_instances == 1 ) {
+    pthread_create( &m_thread, NULL, staticThreadFunc, this );
+  };
+}
+
+void KinectContext::removeInstance(void)
+{
+  m_instances--;
+  if ( m_instances == 0 ) {
+    pthread_cond_wait( &m_cond, &m_mutex );
+  }
+}
+
 void KinectContext::close(void)
 {
   if ( m_context != NULL ) {
+    pthread_join( m_thread, NULL );
+    pthread_mutex_destroy( &m_mutex );
+    pthread_cond_destroy( &m_cond );
     freenect_shutdown( m_context );
     m_context = NULL;
   };
@@ -50,6 +70,21 @@ freenect_context *KinectContext::get(void) throw (Error)
   ERRORMACRO( m_context != NULL, Error, , "libfreenect is shut down. Did you call "
               "\"close\" before?" );
   return m_context;
+}
+
+void KinectContext::lock(void)
+{
+  pthread_mutex_lock( &m_mutex );
+}
+
+void KinectContext::wait(void)
+{
+  processEvents();
+}
+
+void KinectContext::unlock(void)
+{
+  pthread_mutex_unlock( &m_mutex );
 }
 
 void KinectContext::processEvents(void) throw (Error)
@@ -63,6 +98,27 @@ string KinectContext::inspect(void) const
   ostringstream s;
   s << "KinectContext()";
   return s.str();
+}
+
+void KinectContext::threadFunc(void)
+{
+  bool quit = false;
+  while ( !quit ) {
+    lock();
+    if ( m_instances > 0 )
+      processEvents();
+    else {
+      pthread_cond_signal( &m_cond );
+      quit = true;
+    };
+    unlock();
+  };
+}
+
+void *KinectContext::staticThreadFunc( void *self )
+{
+  ((KinectContext *)self)->threadFunc();
+  return self;
 }
 
 VALUE KinectContext::registerRubyClass( VALUE module )

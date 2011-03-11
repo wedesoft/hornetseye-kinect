@@ -26,8 +26,11 @@ KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
   m_currentDepth(0), m_haveDepth(false)
 {
   memset( &m_rgb, 0, sizeof(m_rgb) ); memset( &m_depth, 0, sizeof(m_depth) );
-  ERRORMACRO( freenect_open_device( context->get(), &m_device, node ) >= 0, Error, ,
-              "Failed to open Kinect device number " << node );
+  m_context->lock();
+  if ( freenect_open_device( context->get(), &m_device, node ) < 0 ) {
+    m_context->unlock();
+    ERRORMACRO( false, Error, , "Failed to open Kinect device number " << node );
+  };
   for ( int i=0; i<3; i++ ) {
     m_rgb[i] = (char *)malloc( FREENECT_VIDEO_RGB_SIZE );
     m_depth[i] = (char *)malloc( FREENECT_DEPTH_11BIT_SIZE );
@@ -41,6 +44,8 @@ KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
   freenect_set_video_callback( m_device, staticVideoCallBack );
   freenect_start_depth( m_device );
   freenect_start_video( m_device );
+  m_context->addInstance();
+  m_context->unlock();
 }
 
 KinectInput::~KinectInput(void)
@@ -51,11 +56,14 @@ KinectInput::~KinectInput(void)
 void KinectInput::close(void)
 {
   if ( m_device != NULL ) {
+    m_context->lock();
     freenect_stop_depth( m_device );
     freenect_stop_video( m_device );
     freenect_set_led( m_device, LED_BLINK_GREEN );
     freenect_close_device( m_device );
     instances.erase( m_device );
+    m_context->removeInstance();
+    m_context->unlock();
     m_context.reset();
     m_device = NULL;
   };
@@ -76,11 +84,13 @@ FramePtr KinectInput::readVideo(void) throw (Error)
 {
   ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
               "Did you call \"close\" before?" );
-  while ( !m_haveRGB ) m_context->processEvents();
+  m_context->lock();
+  while ( !m_haveRGB ) m_context->wait();
   m_haveRGB = false;
   char *data = m_rgb[ 2 ];
   m_rgb[ 2 ] = m_rgb[ 1 - m_currentRGB ];
   m_rgb[ 1 - m_currentRGB ] = data;
+  m_context->unlock();
   FramePtr retVal = FramePtr
     ( new Frame( "UBYTERGB", FREENECT_FRAME_W, FREENECT_FRAME_H, m_rgb[ 2 ] ) );
   return retVal;
@@ -90,11 +100,13 @@ FramePtr KinectInput::readDepth(void) throw (Error)
 {
   ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
               "Did you call \"close\" before?" );
-  while ( !m_haveDepth ) m_context->processEvents();
+  m_context->lock();
+  while ( !m_haveDepth ) m_context->wait();
   m_haveDepth = false;
   char *data = m_depth[ 2 ];
   m_depth[ 2 ] = m_depth[ 1 - m_currentDepth ];
   m_depth[ 1 - m_currentDepth ] = data;
+  m_context->unlock();
   FramePtr retVal = FramePtr
     ( new Frame( "USINT", FREENECT_FRAME_W, FREENECT_FRAME_H, m_depth[ 2 ] ) );
   return retVal;
@@ -116,16 +128,26 @@ void KinectInput::setLED( unsigned char state ) throw (Error)
 {
   ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
               "Did you call \"close\" before?" );
-  ERRORMACRO( freenect_set_led( m_device, (freenect_led_options)state ) == 0, Error, ,
-              "Error setting LED state" );
+  m_context->lock();
+  if ( freenect_set_led( m_device, (freenect_led_options)state ) == 0 ) {
+    m_context->unlock();
+  } else {
+    m_context->unlock();
+    ERRORMACRO( false, Error, , "Error setting LED state" );
+  };
 }
 
 void KinectInput::setTilt( double angle ) throw (Error)
 {
   ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
               "Did you call \"close\" before?" );
-  ERRORMACRO( freenect_set_tilt_degs( m_device, angle ) == 0, Error, ,
-              "Error setting tilt angle" );
+  m_context->lock();
+  if ( freenect_set_tilt_degs( m_device, angle ) == 0 ) {
+    m_context->unlock();
+  } else {
+    ERRORMACRO( false, Error, , "Error setting tilt angle" );
+    m_context->unlock();
+  };
 }
 
 void KinectInput::getState(void) throw (Error)

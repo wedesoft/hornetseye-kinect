@@ -28,15 +28,26 @@ public:
   virtual ~KinectContext(void);
   std::string inspect(void) const;
   void close(void);
+  void addInstance(void);
+  void removeInstance(void);
   void processEvents(void) throw (Error);
   freenect_context *get(void) throw (Error);
+  void lock(void);
+  void wait(void);
+  void unlock(void);
   static VALUE cRubyClass;
   static VALUE registerRubyClass( VALUE module );
   static void deleteRubyObject( void *ptr );
   static VALUE wrapNew( VALUE rbClass );
   static VALUE wrapClose( VALUE rbSelf );
 protected:
+  void threadFunc(void);
+  static void *staticThreadFunc( void *self );
   freenect_context *m_context;
+  pthread_t m_thread;
+  pthread_mutex_t m_mutex;
+  pthread_cond_t m_cond;
+  int m_instances;
 };
   
 typedef boost::shared_ptr< KinectContext > KinectContextPtr;
