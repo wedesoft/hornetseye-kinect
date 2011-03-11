@@ -25,13 +25,13 @@ KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
   m_context( context ), m_node( node ), m_device( NULL ), m_currentRGB(0), m_haveRGB(false),
   m_currentDepth(0), m_haveDepth(false)
 {
-  m_rgb[0] = NULL; m_rgb[1] = NULL; m_depth[0] = NULL; m_depth[1] = NULL;
+  memset( &m_rgb, 0, sizeof(m_rgb) ); memset( &m_depth, 0, sizeof(m_depth) );
   ERRORMACRO( freenect_open_device( context->get(), &m_device, node ) >= 0, Error, ,
               "Failed to open Kinect device number " << node );
-  m_rgb[0] = (char *)malloc( FREENECT_VIDEO_RGB_SIZE );
-  m_rgb[1] = (char *)malloc( FREENECT_VIDEO_RGB_SIZE );
-  m_depth[0] = (char *)malloc( FREENECT_DEPTH_11BIT_SIZE );
-  m_depth[1] = (char *)malloc( FREENECT_DEPTH_11BIT_SIZE );
+  for ( int i=0; i<3; i++ ) {
+    m_rgb[i] = (char *)malloc( FREENECT_VIDEO_RGB_SIZE );
+    m_depth[i] = (char *)malloc( FREENECT_DEPTH_11BIT_SIZE );
+  };
   instances[ m_device ] = this;
   freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
   freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
@@ -59,21 +59,15 @@ void KinectInput::close(void)
     m_context.reset();
     m_device = NULL;
   };
-  if ( m_depth[1] != NULL ) {
-    free( m_depth[1] );
-    m_depth[1] = NULL;
-  };
-  if ( m_depth[0] != NULL ) {
-    free( m_depth[0] );
-    m_depth[0] = NULL;
-  };
-  if ( m_rgb[1] != NULL ) {
-    free( m_rgb[1] );
-    m_rgb[1] = NULL;
-  };
-  if ( m_rgb[0] != NULL ) {
-    free( m_rgb[0] );
-    m_rgb[0] = NULL;
+  for ( int i=0; i<3; i++ ) {
+    if ( m_depth[i] != NULL ) {
+      free( m_depth[i] );
+      m_depth[i] = NULL;
+    };
+    if ( m_rgb[i] != NULL ) {
+      free( m_rgb[i] );
+      m_rgb[i] = NULL;
+    };
   };
   m_node = -1;
 }
@@ -84,9 +78,11 @@ FramePtr KinectInput::readVideo(void) throw (Error)
               "Did you call \"close\" before?" );
   while ( !m_haveRGB ) m_context->processEvents();
   m_haveRGB = false;
+  char *data = m_rgb[ 2 ];
+  m_rgb[ 2 ] = m_rgb[ 1 - m_currentRGB ];
+  m_rgb[ 1 - m_currentRGB ] = data;
   FramePtr retVal = FramePtr
-    ( new Frame( "UBYTERGB", FREENECT_FRAME_W, FREENECT_FRAME_H,
-                 m_rgb[ 1 - m_currentRGB ] ) );
+    ( new Frame( "UBYTERGB", FREENECT_FRAME_W, FREENECT_FRAME_H, data ) );
   return retVal;
 }
 
@@ -96,9 +92,11 @@ FramePtr KinectInput::readDepth(void) throw (Error)
               "Did you call \"close\" before?" );
   while ( !m_haveDepth ) m_context->processEvents();
   m_haveDepth = false;
+  char *data = m_depth[ 2 ];
+  m_depth[ 2 ] = m_depth[ 1 - m_currentDepth ];
+  m_depth[ 1 - m_currentDepth ] = data;
   FramePtr retVal = FramePtr
-    ( new Frame( "USINT", FREENECT_FRAME_W, FREENECT_FRAME_H,
-                 m_depth[ 1 - m_currentDepth ] ) );
+    ( new Frame( "USINT", FREENECT_FRAME_W, FREENECT_FRAME_H, data ) );
   return retVal;
 }
 

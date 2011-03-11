@@ -63,10 +63,10 @@ public:
   freenect_device *m_device;
   int m_currentRGB;
   bool m_haveRGB;
-  char *m_rgb[2];
+  char *m_rgb[3];
   int m_currentDepth;
   bool m_haveDepth;
-  char *m_depth[2];
+  char *m_depth[3];
 };
 
 typedef boost::shared_ptr< KinectInput > KinectInputPtr;
