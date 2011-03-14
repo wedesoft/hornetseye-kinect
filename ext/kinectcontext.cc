@@ -32,6 +32,8 @@ KinectContext::KinectContext(void) throw (Error):
   ERRORMACRO( libusb_init( &m_usb ) == 0, Error, , "Error creating libusb session" );
   freenect_init( &m_context, m_usb );
   ERRORMACRO( m_context != NULL, Error, , "Initialisation of libfreenect failed" );
+  pthread_create( &m_thread, NULL, staticThreadFunc, this );
+  pthread_cond_wait( &m_cond, &m_mutex );
 }
 
 KinectContext::~KinectContext(void)
