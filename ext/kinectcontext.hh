@@ -30,10 +30,9 @@ public:
   void close(void);
   void addInstance(void);
   void removeInstance(void);
-  void processEvents(void) throw (Error);
   freenect_context *get(void) throw (Error);
   void lock(void);
-  void wait(void);
+  void wait(void) throw (Error);
   void unlock(void);
   static VALUE cRubyClass;
   static VALUE registerRubyClass( VALUE module );
@@ -43,6 +42,7 @@ public:
 protected:
   void threadFunc(void);
   static void *staticThreadFunc( void *self );
+  libusb_context *m_usb;
   freenect_context *m_context;
   pthread_t m_thread;
   pthread_mutex_t m_mutex;

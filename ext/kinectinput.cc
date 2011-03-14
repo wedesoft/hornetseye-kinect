@@ -85,11 +85,16 @@ FramePtr KinectInput::readVideo(void) throw (Error)
   ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
               "Did you call \"close\" before?" );
   m_context->lock();
-  while ( !m_haveRGB ) m_context->wait();
-  m_haveRGB = false;
-  char *data = m_rgb[ 2 ];
-  m_rgb[ 2 ] = m_rgb[ 1 - m_currentRGB ];
-  m_rgb[ 1 - m_currentRGB ] = data;
+  try {
+    while ( !m_haveRGB ) m_context->wait();
+    m_haveRGB = false;
+    char *data = m_rgb[ 2 ];
+    m_rgb[ 2 ] = m_rgb[ 1 - m_currentRGB ];
+    m_rgb[ 1 - m_currentRGB ] = data;
+  } catch ( Error &e ) {
+    m_context->unlock();
+    throw e;
+  };
   m_context->unlock();
   FramePtr retVal = FramePtr
     ( new Frame( "UBYTERGB", FREENECT_FRAME_W, FREENECT_FRAME_H, m_rgb[ 2 ] ) );
@@ -101,11 +106,16 @@ FramePtr KinectInput::readDepth(void) throw (Error)
   ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
               "Did you call \"close\" before?" );
   m_context->lock();
-  while ( !m_haveDepth ) m_context->wait();
-  m_haveDepth = false;
-  char *data = m_depth[ 2 ];
-  m_depth[ 2 ] = m_depth[ 1 - m_currentDepth ];
-  m_depth[ 1 - m_currentDepth ] = data;
+  try {
+    while ( !m_haveDepth ) m_context->wait();
+    m_haveDepth = false;
+    char *data = m_depth[ 2 ];
+    m_depth[ 2 ] = m_depth[ 1 - m_currentDepth ];
+    m_depth[ 1 - m_currentDepth ] = data;
+  } catch ( Error &e ) {
+    m_context->unlock();
+    throw e;
+  };
   m_context->unlock();
   FramePtr retVal = FramePtr
     ( new Frame( "USINT", FREENECT_FRAME_W, FREENECT_FRAME_H, m_depth[ 2 ] ) );

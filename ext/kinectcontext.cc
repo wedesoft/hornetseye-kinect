@@ -26,10 +26,11 @@ using namespace std;
 VALUE KinectContext::cRubyClass = Qnil;
 
 KinectContext::KinectContext(void) throw (Error):
-  m_context(NULL), m_mutex(PTHREAD_MUTEX_INITIALIZER), m_cond(PTHREAD_COND_INITIALIZER),
-  m_instances(0)
+  m_usb(NULL), m_context(NULL), m_mutex(PTHREAD_MUTEX_INITIALIZER),
+  m_cond(PTHREAD_COND_INITIALIZER), m_instances(0)
 {
-  freenect_init( &m_context, NULL );
+  ERRORMACRO( libusb_init( &m_usb ) == 0, Error, , "Error creating libusb session" );
+  freenect_init( &m_context, m_usb );
   ERRORMACRO( m_context != NULL, Error, , "Initialisation of libfreenect failed" );
 }
 
@@ -63,6 +64,10 @@ void KinectContext::close(void)
     freenect_shutdown( m_context );
     m_context = NULL;
   };
+  if ( m_usb != NULL ) {
+    libusb_exit( m_usb );
+    m_usb = NULL;
+  };
 }
 
 freenect_context *KinectContext::get(void) throw (Error)
@@ -77,20 +82,18 @@ void KinectContext::lock(void)
   pthread_mutex_lock( &m_mutex );
 }
 
-void KinectContext::wait(void)
+void KinectContext::wait(void) throw (Error)
 {
-  processEvents();
+  struct timeval tv;
+  tv.tv_sec = 1;
+  tv.tv_usec = 0;
+  ERRORMACRO( libusb_handle_events_timeout( m_usb, &tv ) == 0, Error, ,
+              "Error processing USB events" );
 }
 
 void KinectContext::unlock(void)
 {
   pthread_mutex_unlock( &m_mutex );
-}
-
-void KinectContext::processEvents(void) throw (Error)
-{
-  ERRORMACRO( freenect_process_events( m_context ) >= 0, Error, , "Error processing "
-              "USB events" );
 }
 
 string KinectContext::inspect(void) const
@@ -105,9 +108,12 @@ void KinectContext::threadFunc(void)
   bool quit = false;
   while ( !quit ) {
     lock();
-    if ( m_instances > 0 )
-      processEvents();
-    else {
+    if ( m_instances > 0 ) {
+      try {
+        wait();
+      } catch ( Error &e ) {
+      };
+    } else {
       pthread_cond_signal( &m_cond );
       quit = true;
     };
