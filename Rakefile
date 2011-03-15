@@ -27,8 +27,8 @@ EMAIL = %q{jan@wedesoft.de}
 HOMEPAGE = %q{http://wedesoft.github.com/hornetseye-kinect/}
 
 OBJ = CC_FILES.ext 'o'
-$CXXFLAGS = "-DNDEBUG #{CFG[ 'CPPFLAGS' ]} #{CFG[ 'CFLAGS' ]}"
-# $CXXFLAGS = "-g #{CFG[ 'CPPFLAGS' ]} #{CFG[ 'CFLAGS' ]}"
+# $CXXFLAGS = "-DNDEBUG #{CFG[ 'CPPFLAGS' ]} #{CFG[ 'CFLAGS' ]}"
+$CXXFLAGS = "-g #{CFG[ 'CPPFLAGS' ]} #{CFG[ 'CFLAGS' ]}"
 if CFG[ 'rubyhdrdir' ]
   $CXXFLAGS = "#{$CXXFLAGS} -I#{CFG[ 'rubyhdrdir' ]} " + 
               "-I#{CFG[ 'rubyhdrdir' ]}/#{CFG[ 'arch' ]}"

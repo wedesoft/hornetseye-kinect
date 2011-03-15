@@ -26,15 +26,13 @@ using namespace std;
 VALUE KinectContext::cRubyClass = Qnil;
 
 KinectContext::KinectContext(void) throw (Error):
-  m_usb(NULL), m_context(NULL), m_instances(0)
+  m_usb(NULL), m_context(NULL), m_instances(0), m_threadInitialised(false)
 {
   pthread_mutex_init( &m_mutex, NULL );
   pthread_cond_init( &m_cond, NULL );
   ERRORMACRO( libusb_init( &m_usb ) == 0, Error, , "Error creating libusb session" );
   freenect_init( &m_context, m_usb );
   ERRORMACRO( m_context != NULL, Error, , "Initialisation of libfreenect failed" );
-  pthread_create( &m_thread, NULL, staticThreadFunc, this );
-  pthread_cond_wait( &m_cond, &m_mutex );
 }
 
 KinectContext::~KinectContext(void)
@@ -46,7 +44,9 @@ void KinectContext::addInstance(void)
 {
   m_instances++;
   if ( m_instances == 1 ) {
+    if ( m_threadInitialised ) pthread_detach( m_thread );
     pthread_create( &m_thread, NULL, staticThreadFunc, this );
+    m_threadInitialised = true;
   };
 }
 
@@ -61,7 +61,10 @@ void KinectContext::removeInstance(void)
 void KinectContext::close(void)
 {
   if ( m_context != NULL ) {
-    pthread_join( m_thread, NULL );
+    if ( m_threadInitialised ) {
+      pthread_join( m_thread, NULL );
+      m_threadInitialised = false;
+    };
     pthread_mutex_destroy( &m_mutex );
     pthread_cond_destroy( &m_cond );
     freenect_shutdown( m_context );

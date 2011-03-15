@@ -45,6 +45,7 @@ protected:
   libusb_context *m_usb;
   freenect_context *m_context;
   pthread_t m_thread;
+  bool m_threadInitialised;
   pthread_mutex_t m_mutex;
   pthread_cond_t m_cond;
   int m_instances;
