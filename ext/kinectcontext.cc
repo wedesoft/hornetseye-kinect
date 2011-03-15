@@ -26,9 +26,10 @@ using namespace std;
 VALUE KinectContext::cRubyClass = Qnil;
 
 KinectContext::KinectContext(void) throw (Error):
-  m_usb(NULL), m_context(NULL), m_mutex(PTHREAD_MUTEX_INITIALIZER),
-  m_cond(PTHREAD_COND_INITIALIZER), m_instances(0)
+  m_usb(NULL), m_context(NULL), m_instances(0)
 {
+  pthread_mutex_init( &m_mutex, NULL );
+  pthread_cond_init( &m_cond, NULL );
   ERRORMACRO( libusb_init( &m_usb ) == 0, Error, , "Error creating libusb session" );
   freenect_init( &m_context, m_usb );
   ERRORMACRO( m_context != NULL, Error, , "Initialisation of libfreenect failed" );
