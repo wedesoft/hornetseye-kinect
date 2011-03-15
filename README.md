@@ -14,9 +14,14 @@ This Ruby extension provides the class {Hornetseye::KinectInput} for capturing v
 Installation
 ------------
 
-*hornetseye-kinect* requires the V4L2 headers. If you are running Debian or (K)ubuntu, you can install them like this:
+*hornetseye-kinect* requires libfreenect
 
-    $ sudo aptitude install linux-libc-dev
+    $ git clone https://github.com/OpenKinect/libfreenect.git
+    $ cd libfreenect
+    $ cmake .
+    $ make
+    $ sudo make install
+    $ cd ..
 
 To install this Ruby extension, use the following command:
 
