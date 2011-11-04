@@ -15,6 +15,23 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include "kinectinput.hh"
 
+#ifndef FREENECT_FRAME_W
+#define FREENECT_FRAME_W 640
+#endif
+#ifndef FREENECT_FRAME_H
+#define FREENECT_FRAME_H 480
+#endif
+#ifndef FREENECT_FRAME_PIX
+#define FREENECT_FRAME_PIX (FREENECT_FRAME_W * FREENECT_FRAME_H)
+#endif
+#ifndef FREENECT_VIDEO_RGB_SIZE
+#define FREENECT_VIDEO_RGB_SIZE (FREENECT_FRAME_PIX*3)
+#endif
+#ifndef FREENECT_DEPTH_11BIT_SIZE
+#define FREENECT_DEPTH_11BIT_SIZE (FREENECT_FRAME_PIX*2)
+#endif
+
+
 using namespace std;
 
 VALUE KinectInput::cRubyClass = Qnil;
@@ -36,8 +53,10 @@ KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
     m_depth[i] = (char *)malloc( FREENECT_DEPTH_11BIT_SIZE );
   };
   instances[ m_device ] = this;
-  freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
-  freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
+  // freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
+  // freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
+  freenect_set_video_mode(m_device, freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB));
+  freenect_set_depth_mode(m_device, freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT));
   freenect_set_depth_buffer( m_device, m_rgb[0] );
   freenect_set_video_buffer( m_device, m_rgb[0] );
   freenect_set_depth_callback( m_device, staticDepthCallBack );
