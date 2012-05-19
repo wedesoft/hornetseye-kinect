@@ -53,10 +53,10 @@ KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
     m_depth[i] = (char *)malloc( FREENECT_DEPTH_11BIT_SIZE );
   };
   instances[ m_device ] = this;
-  // freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
-  // freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
-  freenect_set_video_mode(m_device, freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB));
-  freenect_set_depth_mode(m_device, freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT));
+  freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
+  freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
+  // freenect_set_video_mode(m_device, freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB));
+  // freenect_set_depth_mode(m_device, freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT));
   freenect_set_depth_buffer( m_device, m_rgb[0] );
   freenect_set_video_buffer( m_device, m_rgb[0] );
   freenect_set_depth_callback( m_device, staticDepthCallBack );
@@ -200,7 +200,7 @@ int KinectInput::getTiltStatus(void) throw (Error)
 {
   ERRORMACRO( m_device != NULL, Error, , "Kinect device is not open. "
               "Did you call \"close\" before?" );
-  return (int)freenect_get_tilt_status( freenect_get_tilt_state( m_device ) );
+  return (int)(freenect_get_tilt_state( m_device )->tilt_status);
 }
 
 void KinectInput::depthCallBack( void *depth, unsigned int timestamp )

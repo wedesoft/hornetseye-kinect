@@ -7,7 +7,7 @@ require 'rake/loaders/makefile'
 require 'rbconfig'
 
 PKG_NAME = 'hornetseye-kinect'
-PKG_VERSION = '0.4.0'
+PKG_VERSION = '0.4.1'
 CFG = RbConfig::CONFIG
 CXX = ENV[ 'CXX' ] || 'g++'
 RB_FILES = FileList[ 'lib/**/*.rb' ]
@@ -27,7 +27,7 @@ EMAIL = %q{jan@wedesoft.de}
 HOMEPAGE = %q{http://wedesoft.github.com/hornetseye-kinect/}
 
 OBJ = CC_FILES.ext 'o'
-# $CXXFLAGS = "-DNDEBUG #{CFG[ 'CPPFLAGS' ]} #{CFG[ 'CFLAGS' ]}"
+# $CXXFLAGS = "-DNDEBUG -DHAVE_CONFIG_H #{CFG[ 'CPPFLAGS' ]} #{CFG[ 'CFLAGS' ]}"
 $CXXFLAGS = "-g #{CFG[ 'CPPFLAGS' ]} #{CFG[ 'CFLAGS' ]}"
 if CFG[ 'rubyhdrdir' ]
   $CXXFLAGS = "#{$CXXFLAGS} -I#{CFG[ 'rubyhdrdir' ]} " + 
@@ -73,6 +73,32 @@ task :uninstall do
     FileUtils.rm_f "#{$SITEARCHDIR}/#{File.basename SO_FILE}"
   end
 end
+
+desc 'Create config.h'
+task :config_h => 'ext/config.h'
+
+def check_c_header( name )
+  check_program do |c| 
+    c.puts <<EOS
+extern "C" {
+  #include <#{name}>
+}
+int main(void) { return 0; }
+EOS
+  end 
+end
+
+file 'ext/config.h' do |t|
+  s = "/* config.h. Generated from Rakefile by rake. */\n"
+  if check_c_header 'libfreenect/libfreenect.h'
+    s << "#define HAVE_LIBFREENECT_INCDIR 1\n"
+  elsif check_c_header 'libfreenect.h'
+    s << "#undef HAVE_LIBFREENECT_INCDIR 1\n"
+  else
+    raise 'Cannot find swscale.h header file'
+  end
+  File.open(t.name, 'w') { |f| f.puts s }
+end                         
 
 Rake::TestTask.new do |t|
   t.libs << 'ext'
@@ -181,5 +207,5 @@ end
 import ".depends.mf"
 
 CLEAN.include 'ext/*.o'
-CLOBBER.include SO_FILE, 'doc', '.yardoc', '.depends.mf'
+CLOBBER.include SO_FILE, 'doc', '.yardoc', '.depends.mf', 'ext/config.h'
 

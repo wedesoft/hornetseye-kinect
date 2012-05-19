@@ -16,8 +16,16 @@
 #ifndef HORNETSEYE_KINECTCONTEXT_HH
 #define HORNETSEYE_KINECTCONTEXT_HH
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <boost/smart_ptr.hpp>
+#ifdef HAVE_LIBFREENECT_INCDIR
 #include <libfreenect/libfreenect.h>
+#else
+#include <libfreenect.h>
+#endif
 #include "error.hh"
 #include "rubyinc.hh"
 
