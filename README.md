@@ -16,6 +16,7 @@ Installation
 
 *hornetseye-kinect* requires libfreenect
 
+    $ sudo aptitude install libboost-dev
     $ git clone https://github.com/OpenKinect/libfreenect.git
     $ cd libfreenect
     $ cmake .
