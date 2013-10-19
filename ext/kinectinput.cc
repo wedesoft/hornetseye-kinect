@@ -53,10 +53,10 @@ KinectInput::KinectInput( KinectContextPtr context, int node ) throw (Error):
     m_depth[i] = (char *)malloc( FREENECT_DEPTH_11BIT_SIZE );
   };
   instances[ m_device ] = this;
-  freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
-  freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
-  // freenect_set_video_mode(m_device, freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB));
-  // freenect_set_depth_mode(m_device, freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT));
+  // freenect_set_depth_format( m_device, FREENECT_DEPTH_11BIT );
+  // freenect_set_video_format( m_device, FREENECT_VIDEO_RGB );
+  freenect_set_video_mode(m_device, freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB));
+  freenect_set_depth_mode(m_device, freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT));
   freenect_set_depth_buffer( m_device, m_rgb[0] );
   freenect_set_video_buffer( m_device, m_rgb[0] );
   freenect_set_depth_callback( m_device, staticDepthCallBack );
@@ -252,6 +252,7 @@ VALUE KinectInput::registerRubyClass( VALUE module )
   rb_define_method( cRubyClass, "get_state", RUBY_METHOD_FUNC( wrapGetState ), 0 );
   rb_define_method( cRubyClass, "acc", RUBY_METHOD_FUNC( wrapGetAcc ), 0 );
   rb_define_method( cRubyClass, "tilt_status", RUBY_METHOD_FUNC( wrapGetTiltStatus ), 0 );
+  return cRubyClass;
 }
 
 void KinectInput::deleteRubyObject( void *ptr )

@@ -26,7 +26,7 @@ using namespace std;
 VALUE KinectContext::cRubyClass = Qnil;
 
 KinectContext::KinectContext(void) throw (Error):
-  m_usb(NULL), m_context(NULL), m_instances(0), m_threadInitialised(false)
+  m_usb(NULL), m_context(NULL), m_threadInitialised(false), m_instances(0)
 {
   pthread_mutex_init( &m_mutex, NULL );
   pthread_cond_init( &m_cond, NULL );

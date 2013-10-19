@@ -21,6 +21,7 @@
 #endif
 
 #include <boost/smart_ptr.hpp>
+#include <libusb-1.0/libusb.h>
 #ifdef HAVE_LIBFREENECT_INCDIR
 #include <libfreenect/libfreenect.h>
 #else
