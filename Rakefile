@@ -96,7 +96,7 @@ file 'ext/config.h' do |t|
   elsif check_c_header 'libfreenect.h'
     s << "#undef HAVE_LIBFREENECT_INCDIR 1\n"
   else
-    raise 'Cannot find swscale.h header file'
+    raise 'Cannot find libfreenect.h header file'
   end
   File.open(t.name, 'w') { |f| f.puts s }
 end                         
